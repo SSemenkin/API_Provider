@@ -26,6 +26,7 @@ signals:
     void progress(float percent);
     void log(const QString &);
     void error(const QString &error);
+    void finished(float percent);
 private:
     void startRequests();
 
@@ -34,7 +35,7 @@ private:
     QByteArray prepareBody(const QString &args) const;
 
 private:
-    QScopedPointer<QNetworkAccessManager> s_manager;
+    QScopedPointer<QNetworkAccessManager> m_manager;
 
     QStringList m_data;
     QString m_json;
@@ -43,18 +44,6 @@ private:
 
     bool m_isStop {false};
 
-};
-
-class CustomThread : public QThread
-{
-    Q_OBJECT
-public:
-    explicit CustomThread(QObject *parent = nullptr) : QThread(parent){
-        qDebug() << Q_FUNC_INFO;
-    }
-    ~CustomThread() {
-        qDebug() << Q_FUNC_INFO;
-    }
 };
 
 #endif // REQUESTSENDER_H

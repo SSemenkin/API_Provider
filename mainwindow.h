@@ -27,6 +27,8 @@ private:
     void startSendingRequests();
     void stopSendingRequests();
 
+    void showSuccessPercent(float value);
+
 private:
     Ui::MainWindow *ui;
 

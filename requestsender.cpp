@@ -1,6 +1,7 @@
 #include "requestsender.h"
 #include <QEventLoop>
 
+
 RequestSender::RequestSender(const QStringList &data,
                              const QString &url,
                              const QString &json,
@@ -11,9 +12,9 @@ RequestSender::RequestSender(const QStringList &data,
     , m_request(QUrl(url))
 {
     m_request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    moveToThread(new CustomThread(this));
-    s_manager.reset(new QNetworkAccessManager);
-    s_manager->moveToThread(thread());
+    moveToThread(new QThread(this));
+    m_manager.reset(new QNetworkAccessManager);
+    m_manager->moveToThread(thread());
     connect(thread(), &QThread::started, this, &RequestSender::startRequests);
     thread()->start();
 }
@@ -30,7 +31,8 @@ RequestSender::~RequestSender()
 void RequestSender::startRequests()
 {
     QEventLoop loop;
-    connect(s_manager.data(), &QNetworkAccessManager::finished, &loop, &QEventLoop::quit);
+    connect(m_manager.data(), &QNetworkAccessManager::finished, &loop, &QEventLoop::quit);
+    int successCounter {0};
     for (int i = 0; i < m_data.size(); ++i) {
         m_mutex.lock();
         if (isStopRequested()) {
@@ -39,19 +41,24 @@ void RequestSender::startRequests()
         }
         m_mutex.unlock();
         QByteArray body = prepareBody(m_data.at(i));
-        QNetworkReply *reply = s_manager->post(m_request, body);
+        if(body.isEmpty()) {
+            continue;
+        }
+        QNetworkReply *reply = m_manager->post(m_request, body);
         loop.exec();
         QString answer = reply->readAll();
         void (RequestSender::*signal)(const QString &) = &RequestSender::log;
-
+        successCounter++;
         if (answer.toLower() != "{\"status\":\"ok\"}") {
             answer = "<font color = \"red\">" + answer + "<font>";
             signal = &RequestSender::error;
+            successCounter--;
         }
         emit (this->*signal)(QString("Post to : %1\nBody : %2").arg(m_request.url().toString(), body));
         emit (this->*signal)(answer.toUtf8() + "<br>");
         emit progress(static_cast<float>(i + 1) / static_cast<float>(m_data.size()) * 100.0f);
     }
+    emit finished(static_cast<float>(successCounter) / static_cast<float>(m_data.size()) * 100.f);
 }
 
 void RequestSender::stopRequests()
@@ -92,6 +99,7 @@ QByteArray RequestSender::prepareBody(const QString &arg) const
         result = m_json.arg(args.first(), args.at(1), args.at(2), args.at(3), args.at(4), args.at(5), args.at(6)).toUtf8();
         break;
     default:
+        return QByteArray{};
         break;
     }
     return result;

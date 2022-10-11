@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include <QFileDialog>
 #include <QScopedPointer>
+#include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -57,11 +58,17 @@ void MainWindow::startSendingRequests()
     connect(m_requestSender.data(), &RequestSender::progress, ui->progressBar, &QProgressBar::setValue);
     connect(m_requestSender.data(), &RequestSender::log, ui->logs, &QTextBrowser::append);
     connect(m_requestSender.data(), &RequestSender::error, ui->errors, &QTextBrowser::append);
+    connect(m_requestSender.data(), &RequestSender::finished, this, &MainWindow::showSuccessPercent);
     ui->stopRequestsButton->setEnabled(true);
 }
 
 void MainWindow::stopSendingRequests()
 {
     emit stop();
+}
+
+void MainWindow::showSuccessPercent(float value)
+{
+    QMessageBox::information(this, "Success Percent", QString("Success percent is %1").arg(value));
 }
 
