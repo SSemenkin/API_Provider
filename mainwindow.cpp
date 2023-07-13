@@ -51,6 +51,7 @@ QStringList MainWindow::getFileContent() const
 
 void MainWindow::startSendingRequests()
 {
+    static QFile logFile;
     ui->logs->setText("");
     ui->errors->setText("");
     m_requestSender.reset(new RequestSender(getFileContent(), ui->url->text(), ui->body->toPlainText()));
@@ -60,6 +61,17 @@ void MainWindow::startSendingRequests()
     connect(m_requestSender.data(), &RequestSender::error, ui->errors, &QTextBrowser::append);
     connect(m_requestSender.data(), &RequestSender::finished, this, &MainWindow::showSuccessPercent);
     ui->stopRequestsButton->setEnabled(true);
+
+    if (not logFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Append)) {
+        ui->errors->append("Cannot open log file" + logFile.errorString());
+    } else {
+        auto write_str = [] (QString s) -> void {
+            logFile.write(s.replace("<br>", "\n").toUtf8());
+            logFile.flush();
+        };
+        connect(m_requestSender.data(), &RequestSender::log, this, write_str);
+        connect(m_requestSender.data(), &RequestSender::error, this, write_str);
+    }
 }
 
 void MainWindow::stopSendingRequests()
