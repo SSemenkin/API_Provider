@@ -4,9 +4,7 @@
 #include <QScopedPointer>
 #include <QMessageBox>
 
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
 
@@ -20,7 +18,8 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::browse()
+void
+MainWindow::browse()
 {
     QString filepath = QFileDialog::getOpenFileName(this, "Select file", m_filepath, "CSV, delimeter \";\"(*.csv)");
 
@@ -30,7 +29,8 @@ void MainWindow::browse()
     }
 }
 
-QStringList MainWindow::getFileContent() const
+QStringList
+MainWindow::getFileContent() const
 {
     QFile file(m_filepath);
     if (!file.exists()) {
@@ -39,8 +39,7 @@ QStringList MainWindow::getFileContent() const
     }
 
     if (!file.open(QIODevice::ReadOnly)) {
-        ui->logs->append("File " + m_filepath + " cannot be open.\n" +
-                         file.errorString());
+        ui->logs->append("File " + m_filepath + " cannot be open.\n" + file.errorString());
         return QStringList();
     }
 
@@ -49,9 +48,10 @@ QStringList MainWindow::getFileContent() const
     return result;
 }
 
-void MainWindow::startSendingRequests()
+void
+MainWindow::startSendingRequests()
 {
-    static QFile logFile;
+    static QFile logFile("log.txt");
     ui->logs->setText("");
     ui->errors->setText("");
     m_requestSender.reset(new RequestSender(getFileContent(), ui->url->text(), ui->body->toPlainText()));
@@ -65,7 +65,7 @@ void MainWindow::startSendingRequests()
     if (not logFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Append)) {
         ui->errors->append("Cannot open log file" + logFile.errorString());
     } else {
-        auto write_str = [] (QString s) -> void {
+        auto write_str = [](QString s) -> void {
             logFile.write(s.replace("<br>", "\n").toUtf8());
             logFile.flush();
         };
@@ -74,13 +74,14 @@ void MainWindow::startSendingRequests()
     }
 }
 
-void MainWindow::stopSendingRequests()
+void
+MainWindow::stopSendingRequests()
 {
     emit stop();
 }
 
-void MainWindow::showSuccessPercent(float value)
+void
+MainWindow::showSuccessPercent(float value)
 {
     QMessageBox::information(this, "Success Percent", QString("Success percent is %1").arg(value));
 }
-
